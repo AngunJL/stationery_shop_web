@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stationery Shop</title>
+    <!-- Link to CSS file -->
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="logo">
+            <h2>StationeryShop</h2>
+        </div>
+        <ul class="nav-links">
+            <li><a href="/" class="active">Home</a></li>
+            <li><a href="/cart">Cart <span id="cart-count">(0)</span></a></li>
+            <li><a href="/profile">Profile</a></li>
+            <!-- Button to open Login Popup -->
+            <li><button id="loginBtn" class="btn-login">Login</button></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Categories -->
+        <section class="category-section">
+            <h2>Categories</h2>
+            <div class="category-buttons">
+                <button class="cat-btn active">All</button>
+                <button class="cat-btn">Notebooks & Paper</button>
+                <button class="cat-btn">Pens & Pencils</button>
+                <button class="cat-btn">Art Supplies</button>
+            </div>
+        </section>
+
+        <!-- Product Grid -->
+        <section class="product-section">
+            <div class="product-grid" id="productGrid">
+              
+            </div>
+        </section>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- Authentication Modal (Login / Register) -->
+    <!-- ========================================== -->
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <!-- Close Button -->
+            <span class="close-btn" id="closeModal">&times;</span>
+            
+            <!-- Login Form -->
+            <div id="loginFormWrapper">
+                <h2>Login</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="loginUsername">Username</label>
+                        <input type="text" id="loginUsername" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    <button type="submit" class="btn-submit">Login</button>
+                </form>
+                <p class="toggle-form-text">Don't have an account? <span id="showRegister" class="text-link">Register here</span></p>
+            </div>
+
+            <!-- Register Form (Hidden by default) -->
+            <div id="registerFormWrapper" style="display: none;">
+                <h2>Register</h2>
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label for="regUsername">Username</label>
+                        <input type="text" id="regUsername" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regPassword">Password</label>
+                        <input type="password" id="regPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regFirstName">First Name</label>
+                        <input type="text" id="regFirstName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regLastName">Last Name</label>
+                        <input type="text" id="regLastName" required>
+                    </div>
+                    <button type="submit" class="btn-submit">Register</button>
+                </form>
+                <p class="toggle-form-text">Already have an account? <span id="showLogin" class="text-link">Login here</span></p>
+            </div>
+        </div>
+    </div>
+
+    
+    <script src="/script.js"></script>
+</body>
+</html>

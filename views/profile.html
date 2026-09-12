@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Stationery Shop</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo"><h2>StationeryShop</h2></div>
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/cart">Cart <span id="cart-count">(0)</span></a></li>
+            <li><a href="/profile" class="active">Profile</a></li>
+        </ul>
+    </nav>
+
+    <main class="container">
+        <div class="profile-header">
+            <h2>My Profile</h2>
+            <p>Welcome back, John Doe</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('info')">Personal Info</button>
+            <button class="tab-btn" onclick="showTab('orders')">Order History</button>
+        </div>
+
+        <!-- Tab Content: Info -->
+        <div id="info" class="tab-content active-content">
+            <div class="info-card">
+                <h3>Account Details</h3>
+                <p><strong>Username:</strong> johndoe99</p>
+                <p><strong>Name:</strong> John Doe</p>
+                <p><strong>Points:</strong> <span class="text-highlight">150 Points</span></p>
+                <p><strong>Default Address:</strong> 123 Main St, Bangkok</p>
+                <button class="btn-submit" style="width: auto; margin-top: 15px;">Edit Profile</button>
+            </div>
+        </div>
+
+        <!-- Tab Content: Orders -->
+        <div id="orders" class="tab-content" style="display: none;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Date</th>
+                        <th>Total Amount</th>
+                        <th>Delivery</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>#ORD-001</td>
+                        <td>2023-10-25</td>
+                        <td>120 THB</td>
+                        <td>Shipping</td>
+                        <td><span class="status-badge shipped">Shipped</span></td>
+                    </tr>
+                    <tr>
+                        <td>#ORD-002</td>
+                        <td>2023-10-28</td>
+                        <td>45 THB</td>
+                        <td>Pick-up</td>
+                        <td><span class="status-badge pending">Pending</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).style.display = 'block';
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>

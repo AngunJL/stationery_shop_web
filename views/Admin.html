@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body class="admin-body">
+    
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <h2>Admin Panel</h2>
+        </div>
+        <ul class="sidebar-menu">
+            <li><button class="menu-btn active" onclick="showAdminSection('products')">📦 Products</button></li>
+            <li><button class="menu-btn" onclick="showAdminSection('orders')">📋 Orders</button></li>
+            <li><button class="menu-btn" onclick="showAdminSection('users')">👥 Users</button></li>
+            <li><a href="./index.html" class="menu-btn logout">Logout</a></li>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="admin-content">
+        
+        <!-- Products Section -->
+        <section id="products" class="admin-section active-section">
+            <div class="section-header">
+                <h2>Manage Products</h2>
+                <button class="btn-submit" style="width: auto;">+ Add Product</button>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Image</th>
+                        <th>Name</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td><img src="./images/pen.jpg" width="40" alt="Pen"></td>
+                        <td>Blue Pen</td>
+                        <td>15</td>
+                        <td>100</td>
+                        <td><button class="btn-edit">Edit</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Orders Section (Hidden by default) -->
+        <section id="orders" class="admin-section" style="display: none;">
+            <h2>Manage Orders</h2>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>#ORD-001</td>
+                        <td>John Doe</td>
+                        <td>120</td>
+                        <td>
+                            <select>
+                                <option>Pending</option>
+                                <option selected>Shipped</option>
+                                <option>Completed</option>
+                            </select>
+                        </td>
+                        <td><button class="btn-submit" style="width: auto; padding: 5px 10px;">Update</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Users Section (Hidden by default) -->
+        <section id="users" class="admin-section" style="display: none;">
+            <h2>Manage Users</h2>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Name</th>
+                        <th>Points</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>johndoe99</td>
+                        <td>John Doe</td>
+                        <td>150</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <script>
+        function showAdminSection(sectionId) {
+            document.querySelectorAll('.admin-section').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.menu-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(sectionId).style.display = 'block';
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>

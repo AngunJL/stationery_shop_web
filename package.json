@@ -1,0 +1,26 @@
+{
+  "name": "stationery_shop_web",
+  "version": "1.0.0",
+  "description": "**Project-CPE303-stationery_shop_web**",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AngunJL/stationery_shop_web.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AngunJL/stationery_shop_web/issues"
+  },
+  "homepage": "https://github.com/AngunJL/stationery_shop_web#readme",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "mysql2": "^3.24.4"
+  }
+}
