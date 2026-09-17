@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cart - Stationery Shop</title>
     <link rel="stylesheet" href="/style.css">
+    
 </head>
 <body>
     <!-- Navbar -->
@@ -12,7 +13,7 @@
         <div class="logo"><h2>StationeryShop</h2></div>
         <ul class="nav-links">
             <li><a href="/">Home</a></li>
-            <li><a href="/cart" class="active">Cart <span id="cart-count">(2)</span></a></li>
+            <li><a href="/cart" class="active">Cart <span id="cart-count">(0)</span></a></li>
             <li><a href="/profile">Profile</a></li>
         </ul> 
     </nav>
@@ -21,28 +22,9 @@
         <!-- Left Side: Cart Items -->
         <div class="cart-items-section">
             <h2>Your Cart</h2>
-            <div class="cart-item">
-                <img src="/public/images/pen.jpg" alt="Pen" class="cart-img">
-                <div class="cart-item-info">
-                    <h4>Blue Ballpoint Pen (0.5mm)</h4>
-                    <p>Price: 15 THB</p>
-                </div>
-                <div class="cart-item-actions">
-                    <input type="number" value="2" min="1" class="qty-input">
-                    <button class="btn-remove">Remove</button>
-                </div>
-            </div>
-            <!-- Item 2 -->
-            <div class="cart-item">
-                <img src="./images/notebook.jpg" alt="Notebook" class="cart-img">
-                <div class="cart-item-info">
-                    <h4>A5 Ring Notebook</h4>
-                    <p>Price: 45 THB</p>
-                </div>
-                <div class="cart-item-actions">
-                    <input type="number" value="1" min="1" class="qty-input">
-                    <button class="btn-remove">Remove</button>
-                </div>
+            <!-- กล่องนี้จะให้ JavaScript ดึงสินค้ามาใส่ -->
+            <div id="cartItemsContainer">
+                <p>ตะกร้าสินค้าของคุณว่างเปล่า</p>
             </div>
         </div>
 
@@ -51,7 +33,7 @@
             <h2>Order Summary</h2>
             <div class="summary-row">
                 <span>Subtotal:</span>
-                <span>75 THB</span>
+                <span id="cartSubtotal">0 THB</span>
             </div>
             
             <hr class="divider">
@@ -78,11 +60,12 @@
             
             <div class="summary-row total">
                 <span>Total:</span>
-                <span>75 THB</span>
+                <span id="cartTotal">0 THB</span>
             </div>
             
-            <button class="btn-submit">Confirm Order</button>
+            <button class="btn-submit" onclick="checkout()">Confirm Order</button>
         </div>
     </main>
+    <script src="/script.js"></script>
 </body>
 </html>

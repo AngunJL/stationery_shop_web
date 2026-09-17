@@ -114,6 +114,24 @@ ul {
     border-color: #50e27c;
 }
 
+.btn-category {
+background-color: #f0f0f0;
+border: 1px solid #ccc;
+color: #333;
+padding: 8px 16px;
+margin: 5px;
+border-radius: 20px; /* ทำให้ปุ่มขอบมน */
+cursor: pointer;
+font-size: 14px;
+transition: all 0.3s ease;
+}
+
+.btn-category:hover {
+background-color: #0b5314; /* เปลี่ยนเป็นสีน้ำเงินตอนเอาเมาส์ชี้ */
+color: white;
+border-color: #0b5314;
+}
+
 /* =========================================
    Product Grid & Cards
    ========================================= */

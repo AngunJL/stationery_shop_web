@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stationery Shop</title>
-    <!-- Link to CSS file -->
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
@@ -19,7 +18,7 @@
             <li><a href="/cart">Cart <span id="cart-count">(0)</span></a></li>
             <li><a href="/profile">Profile</a></li>
             <!-- Button to open Login Popup -->
-            <li><button id="loginBtn" class="btn-login">Login</button></li>
+            <li><button id="loginBtn" class="btn-login" style="background:#1f9c30; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">Login</button></li>
         </ul>
     </nav>
 
@@ -28,75 +27,37 @@
         <!-- Categories -->
         <section class="category-section">
             <h2>Categories</h2>
-            <div class="category-buttons">
-                <button class="cat-btn active">All</button>
-                <button class="cat-btn">Notebooks & Paper</button>
-                <button class="cat-btn">Pens & Pencils</button>
-                <button class="cat-btn">Art Supplies</button>
+            <div class="category-buttons" id="categoryList">
+                <!-- ข้อมูลหมวดหมู่จะถูก JavaScript ดึงมาใส่ตรงนี้อัตโนมัติ -->
             </div>
         </section>
 
-        <!-- Product Grid -->
+       <!-- Product Grid -->
         <section class="product-section">
             <div class="product-grid" id="productGrid">
-              
+            <!-- ข้อมูลสินค้าจะถูก JavaScript ดึงมาใส่ตรงนี้อัตโนมัติ -->
             </div>
         </section>
     </main>
 
-    <!-- ========================================== -->
-    <!-- Authentication Modal (Login / Register) -->
-    <!-- ========================================== -->
-    <div id="authModal" class="modal">
-        <div class="modal-content">
-            <!-- Close Button -->
-            <span class="close-btn" id="closeModal">&times;</span>
-            
-            <!-- Login Form -->
-            <div id="loginFormWrapper">
-                <h2>Login</h2>
-                <form id="loginForm">
-                    <div class="form-group">
-                        <label for="loginUsername">Username</label>
-                        <input type="text" id="loginUsername" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="loginPassword">Password</label>
-                        <input type="password" id="loginPassword" required>
-                    </div>
-                    <button type="submit" class="btn-submit">Login</button>
-                </form>
-                <p class="toggle-form-text">Don't have an account? <span id="showRegister" class="text-link">Register here</span></p>
+    <!-- Login Modal Popup -->
+    <div id="loginModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+        <div style="background:white; padding:30px; border-radius:10px; width:350px; position:relative; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+            <span id="closeModal" style="position:absolute; top:10px; right:15px; cursor:pointer; font-size:24px; font-weight:bold;">&times;</span>
+            <h2 style="margin-top:0; text-align:center;">Login</h2>
+            <div class="form-group" style="margin-bottom:15px;">
+                <label>Username</label>
+                <input type="text" id="loginUsername" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:5px;" placeholder="Your username">
             </div>
-
-            <!-- Register Form (Hidden by default) -->
-            <div id="registerFormWrapper" style="display: none;">
-                <h2>Register</h2>
-                <form id="registerForm">
-                    <div class="form-group">
-                        <label for="regUsername">Username</label>
-                        <input type="text" id="regUsername" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="regPassword">Password</label>
-                        <input type="password" id="regPassword" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="regFirstName">First Name</label>
-                        <input type="text" id="regFirstName" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="regLastName">Last Name</label>
-                        <input type="text" id="regLastName" required>
-                    </div>
-                    <button type="submit" class="btn-submit">Register</button>
-                </form>
-                <p class="toggle-form-text">Already have an account? <span id="showLogin" class="text-link">Login here</span></p>
+            <div class="form-group" style="margin-bottom:20px;">
+                <label>Password</label>
+                <input type="password" id="loginPassword" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:5px;" placeholder="Your password">
             </div>
+            <button onclick="submitLogin()" style="width:100%; padding:10px; background:#2da129; color:white; border:none; border-radius:5px; cursor:pointer; font-size:16px;">Login</button>
         </div>
     </div>
 
-    
+    <!-- เรียกใช้สคริปต์ไว้ล่างสุดเสมอ -->
     <script src="/script.js"></script>
 </body>
 </html>

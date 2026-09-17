@@ -4,118 +4,135 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="/style.css">
 </head>
-<body class="admin-body">
-    
-    <!-- Sidebar -->
-    <aside class="sidebar">
-        <div class="sidebar-logo">
-            <h2>Admin Panel</h2>
-        </div>
-        <ul class="sidebar-menu">
-            <li><button class="menu-btn active" onclick="showAdminSection('products')">📦 Products</button></li>
-            <li><button class="menu-btn" onclick="showAdminSection('orders')">📋 Orders</button></li>
-            <li><button class="menu-btn" onclick="showAdminSection('users')">👥 Users</button></li>
-            <li><a href="./index.html" class="menu-btn logout">Logout</a></li>
+<body style="background-color: #f4f7f6;">
+    <nav class="navbar" style="background-color: #5f9470;">
+        <div class="logo"><h2 style="color:white;">Admin Dashboard</h2></div>
+        <ul class="nav-links">
+            <li><a href="#" onclick="logout()" style="color:#0c0000; font-weight:bold;">Logout</a></li>
         </ul>
-    </aside>
+    </nav>
 
-    <!-- Main Content -->
-    <main class="admin-content">
+    <main class="container" style="margin-top: 30px; background:white; padding:20px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.1);">
         
-        <!-- Products Section -->
-        <section id="products" class="admin-section active-section">
-            <div class="section-header">
-                <h2>Manage Products</h2>
-                <button class="btn-submit" style="width: auto;">+ Add Product</button>
-            </div>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Image</th>
-                        <th>Name</th>
-                        <th>Price</th>
-                        <th>Stock</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>1</td>
-                        <td><img src="./images/pen.jpg" width="40" alt="Pen"></td>
-                        <td>Blue Pen</td>
-                        <td>15</td>
-                        <td>100</td>
-                        <td><button class="btn-edit">Edit</button></td>
-                    </tr>
-                </tbody>
-            </table>
-        </section>
+        <!-- เมนูสลับหน้า (Tabs) -->
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+            <button id="btnMenuProducts" onclick="switchAdminMenu('products')" style="padding: 10px 20px; border: none; background: #247041; color: white; border-radius: 5px; cursor: pointer; font-size: 16px;">Manage Products</button>
+            <button id="btnMenuOrders" onclick="switchAdminMenu('orders')" style="padding: 10px 20px; border: none; background: #f0f0f0; color: #333; border-radius: 5px; cursor: pointer; font-size: 16px;">Manage Orders</button>
+        </div>
 
-        <!-- Orders Section (Hidden by default) -->
-        <section id="orders" class="admin-section" style="display: none;">
-            <h2>Manage Orders</h2>
-            <table class="data-table">
+        <!-- ============================== -->
+        <!-- ส่วนที่ 1: หน้าจัดการสินค้า -->
+        <!-- ============================== -->
+        <div id="sectionProducts">
+            <h2 style="display: inline-block; margin-right: 20px;">Manage Products</h2>
+            <button onclick="openAddProductModal()" style="padding: 8px 15px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">+ Add New Product</button>
+            
+            <table style="width: 100%; border-collapse: collapse; text-align: left; margin-top: 20px;">
                 <thead>
-                    <tr>
-                        <th>Order ID</th>
-                        <th>Customer</th>
-                        <th>Total</th>
-                        <th>Status</th>
-                        <th>Action</th>
+                    <tr style="background-color: #f8f9fa;">
+                        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">ID</th>
+                        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">รูปภาพ</th>
+                        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">ชื่อสินค้า</th>
+                        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">ราคา</th>
+                        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">คลังสินค้า</th>
+                        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">จัดการ</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr>
-                        <td>#ORD-001</td>
-                        <td>John Doe</td>
-                        <td>120</td>
-                        <td>
-                            <select>
-                                <option>Pending</option>
-                                <option selected>Shipped</option>
-                                <option>Completed</option>
-                            </select>
-                        </td>
-                        <td><button class="btn-submit" style="width: auto; padding: 5px 10px;">Update</button></td>
-                    </tr>
+                <tbody id="adminProductTable">
+                    <!-- ข้อมูลสินค้าจะถูกดึงมาใส่ตรงนี้ -->
                 </tbody>
             </table>
-        </section>
+        </div>
 
-        <!-- Users Section (Hidden by default) -->
-        <section id="users" class="admin-section" style="display: none;">
-            <h2>Manage Users</h2>
-            <table class="data-table">
+        <!-- ============================== -->
+        <!-- ส่วนที่ 2: หน้าจัดการคำสั่งซื้อ (ซ่อนไว้ก่อน) -->
+        <!-- ============================== -->
+        <div id="sectionOrders" style="display: none;">
+            <h2>จัดการคำสั่งซื้อ (Orders)</h2>
+            
+            <table style="width: 100%; border-collapse: collapse; text-align: left; margin-top: 20px;">
                 <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Username</th>
-                        <th>Name</th>
-                        <th>Points</th>
+                    <tr style="background-color: #f8f9fa;">
+                        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">Order ID</th>
+                        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">ลูกค้า</th>
+                        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">วันที่สั่งซื้อ</th>
+                        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">ยอดรวม</th>
+                        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">จัดส่ง</th>
+                        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">สถานะ</th>
+                        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">จัดการ</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr>
-                        <td>1</td>
-                        <td>johndoe99</td>
-                        <td>John Doe</td>
-                        <td>150</td>
-                    </tr>
+                <tbody id="adminOrderTable">
+                    <!-- ข้อมูล Order จะถูกดึงมาใส่ตรงนี้ -->
                 </tbody>
             </table>
-        </section>
+        </div>
+
     </main>
-
-    <script>
-        function showAdminSection(sectionId) {
-            document.querySelectorAll('.admin-section').forEach(el => el.style.display = 'none');
-            document.querySelectorAll('.menu-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById(sectionId).style.display = 'block';
-            event.target.classList.add('active');
-        }
-    </script>
+    <!-- ป๊อปอัปฟอร์มเพิ่มสินค้าใหม่ -->
+    <div id="addProductModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+        <div style="background:white; padding:30px; border-radius:10px; width:400px; position:relative; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+            <span onclick="closeAddProductModal()" style="position:absolute; top:10px; right:15px; cursor:pointer; font-size:24px; font-weight:bold;">&times;</span>
+            <h2 style="margin-top:0;">เพิ่มสินค้าใหม่</h2>
+            
+            <form id="addProductForm" onsubmit="submitNewProduct(event)">
+                <div style="margin-bottom:10px;">
+                    <label>หมวดหมู่:</label>
+                    <select id="newProductCategory" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;" required>
+                        <option value="1">Notebooks & Paper</option>
+                        <option value="2">Pens & Pencils</option>
+                        <option value="3">Art Supplies</option>
+                    </select>
+                </div>
+                <div style="margin-bottom:10px;">
+                    <label>ชื่อสินค้า:</label>
+                    <input type="text" id="newProductName" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;" required>
+                </div>
+                <div style="margin-bottom:10px;">
+                    <label>รายละเอียด:</label>
+                    <textarea id="newProductDesc" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;"></textarea>
+                </div>
+                <div style="margin-bottom:10px;">
+                    <label>ราคา (บาท):</label>
+                    <input type="number" id="newProductPrice" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;" required>
+                </div>
+                <div style="margin-bottom:10px;">
+                    <label>จำนวนในคลัง:</label>
+                    <input type="number" id="newProductStock" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;" required>
+                </div>
+                <div style="margin-bottom:20px;">
+                    <label>ลิงก์รูปภาพ (URL):</label>
+                    <input type="text" id="newProductImage" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;" placeholder="https://...">
+                </div>
+                <button type="submit" style="width:100%; padding:10px; background:#007bff; color:white; border:none; border-radius:5px; cursor:pointer; font-size:16px;">บันทึกสินค้า</button>
+            </form>
+        </div>
+    </div>
+    <!-- ป๊อปอัปอัปเดตสถานะคำสั่งซื้อ -->
+    <div id="updateStatusModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+        <div style="background:white; padding:30px; border-radius:10px; width:350px; position:relative; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+            <span onclick="closeUpdateStatusModal()" style="position:absolute; top:10px; right:15px; cursor:pointer; font-size:24px; font-weight:bold;">&times;</span>
+            <h2 style="margin-top:0;">Update Status</h2>
+            
+            <!-- ซ่อน OrderID ไว้เพื่อส่งไปให้ API -->
+            <input type="hidden" id="updateOrderId">
+            
+            <div style="margin-bottom:20px;">
+                <label>เลือกสถานะใหม่:</label>
+                <select id="newOrderStatus" style="width:100%; padding:10px; border-radius:5px; border:1px solid #ccc; margin-top:8px;">
+                    <option value="Pending">Pending (รอดำเนินการ)</option>
+                    <option value="Processing">Processing (กำลังเตรียมจัดส่ง)</option>
+                    <option value="Shipped">Shipped (จัดส่งแล้ว)</option>
+                    <option value="Completed">Completed (ส่งมอบสำเร็จ)</option>
+                    <option value="Cancelled">Cancelled (ยกเลิก)</option>
+                </select>
+            </div>
+            
+            <button onclick="submitUpdateStatus()" style="width:100%; padding:10px; background:#28a745; color:white; border:none; border-radius:5px; cursor:pointer; font-size:16px;">บันทึกสถานะ</button>
+        </div>
+    </div>
+    <script src="/script.js"></script>
 </body>
 </html>
