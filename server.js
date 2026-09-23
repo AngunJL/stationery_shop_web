@@ -140,9 +140,30 @@ app.put('/api/admin/orders/:id/status', (req, res) => {
     
     db.query(sql, [status, orderId], (err, result) => {
         if (err) {
-            console.error('Failied to update data:', err);
+            console.error('Failed to update data:', err);
             return res.status(500).json({ success: false, error: 'Failed to update data' });
         }
         res.json({ success: true, message: 'Update status successfully' });
+    });
+});
+
+// API สำหรับดึงรายละเอียดสินค้าในบิล (Admin)
+app.get('/api/admin/orders/:id/details', (req, res) => {
+    const orderId = req.params.id; // รับ OrderID จาก URL
+    
+    // JOIN ตาราง OrderDetail กับ Product เพื่อดึงรูปและชื่อสินค้ามาแสดง
+    const sql = `
+        SELECT od.Quantity, od.UnitPrice, p.ProductName, p.Image 
+        FROM OrderDetail od 
+        JOIN Product p ON od.ProductID = p.ProductID 
+        WHERE od.OrderID = ?
+    `;
+    
+    db.query(sql, [orderId], (err, results) => {
+        if (err) {
+            console.error('Failed to fetch order details:', err);
+            return res.status(500).json({ error: 'Failed to fetch order details' });
+        }
+        res.json(results);
     });
 });

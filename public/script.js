@@ -357,25 +357,78 @@ function loadAdminOrders() {
             orders.forEach(o => {
                 // แปลงรูปแบบวันที่และเวลาให้อ่านง่ายขึ้น
                 const orderDate = new Date(o.OrderDate).toLocaleString('th-TH');
-                
                 adminOrderTable.innerHTML += `
-                    <tr>
-                        <td style="padding:10px; border-bottom:1px solid #eee;">#${o.OrderID}</td>
-                        <td style="padding:10px; border-bottom:1px solid #eee;">${o.Username}</td>
-                        <td style="padding:10px; border-bottom:1px solid #eee;">${orderDate}</td>
-                        <td style="padding:10px; border-bottom:1px solid #eee;">${o.TotalAmount} ฿</td>
-                        <td style="padding:10px; border-bottom:1px solid #eee;">${o.DeliveryMethod}</td>
-                        <td style="padding:10px; border-bottom:1px solid #eee;">
-                            <span style="padding: 3px 8px; border-radius: 12px; background: #e3f2fd; color: #0d47a1; font-size: 14px;">${o.Status}</span>
-                        </td>
-                        <td style="padding:10px; border-bottom:1px solid #eee;">
-                        <button onclick="openUpdateStatusModal(${o.OrderID}, '${o.Status}')" style="background:#007bff; color:white; border:none; padding:5px 10px; border-radius:3px; cursor:pointer;">Update status</button>                       
-                        </td>
-                    </tr>
-                `;
+    <tr>
+        <td style="padding:10px; border-bottom:1px solid #eee;">#${o.OrderID}</td>
+        <td style="padding:10px; border-bottom:1px solid #eee;">${o.Username}</td>
+        <td style="padding:10px; border-bottom:1px solid #eee;">${orderDate}</td>
+        <td style="padding:10px; border-bottom:1px solid #eee;">${o.TotalAmount} ฿</td>
+        <td style="padding:10px; border-bottom:1px solid #eee;">${o.DeliveryMethod}</td>
+        <td style="padding:10px; border-bottom:1px solid #eee;">
+            <span style="padding: 3px 8px; border-radius: 12px; background: #e3f2fd; color: #0d47a1; font-size: 14px;">${o.Status}</span>
+        </td>
+        <td style="padding:10px; border-bottom:1px solid #eee;">
+            <!-- เพิ่มปุ่ม รายละเอียด -->
+            <button onclick="toggleOrderDetails(${o.OrderID})" style="width: 95px; text-align: center; background:#17a2b8; color:white; border:none; padding:6px 10px; border-radius:3px; cursor:pointer; margin-right:5px;">รายละเอียด</button>
+<button onclick="openUpdateStatusModal(${o.OrderID}, '${o.Status}')" style="width: 95px; text-align: center; background:#007bff; color:white; border:none; padding:6px 10px; border-radius:3px; cursor:pointer;">อัปเดต</button>        </td>
+    </tr>
+    <!-- แถวสำหรับแสดง Dropdown (ซ่อนไว้ก่อนตั้งแต่แรก) -->
+    <tr id="details-row-${o.OrderID}" style="display: none; background-color: #f8f9fa;">
+        <td colspan="7" style="padding: 15px; border-bottom: 2px solid #ddd;">
+            <div id="details-content-${o.OrderID}">กำลังโหลดข้อมูล...</div>
+        </td>
+    </tr>
+`;
             });
         })
         .catch(error => console.error('Error loading orders:', error));
+}
+// ==========================================
+// ฟังก์ชันกดเปิด/ปิดรายละเอียดคำสั่งซื้อ (Dropdown)
+// ==========================================
+function toggleOrderDetails(orderId) {
+    const row = document.getElementById(`details-row-${orderId}`);
+    const content = document.getElementById(`details-content-${orderId}`);
+    
+    // ถ้ากำลังซ่อนอยู่ ให้เปิดขึ้นมาและดึงข้อมูลจาก API
+    if (row.style.display === 'none') {
+        row.style.display = 'table-row';
+        
+        fetch(`/api/admin/orders/${orderId}/details`)
+            .then(res => res.json())
+            .then(details => {
+                if (details.length === 0) {
+                    content.innerHTML = '<p style="color:red;">ไม่พบข้อมูลสินค้าในบิลนี้</p>';
+                    return;
+                }
+                
+                // สร้างตารางเล็กๆ ซ้อนไว้ข้างใน
+                let html = '<table style="width:95%; margin: 0 auto; background:white; border-collapse:collapse; box-shadow:0 0 5px rgba(0,0,0,0.1);">';
+                html += '<tr style="background:#e9ecef;"> <th style="padding:8px; text-align:left;">รูป</th> <th style="padding:8px; text-align:left;">ชื่อสินค้า</th> <th style="padding:8px; text-align:center;">ราคา/ชิ้น</th> <th style="padding:8px; text-align:center;">จำนวน</th> <th style="padding:8px; text-align:center;">รวม</th> </tr>';
+                
+                details.forEach(item => {
+                    const lineTotal = item.UnitPrice * item.Quantity;
+                    html += `
+                        <tr>
+                            <td style="padding:8px; border-bottom:1px solid #eee;"><img src="${item.Image}" width="40" style="border-radius:4px;"></td>
+                            <td style="padding:8px; border-bottom:1px solid #eee;">${item.ProductName}</td>
+                            <td style="padding:8px; border-bottom:1px solid #eee; text-align:center;">${item.UnitPrice} ฿</td>
+                            <td style="padding:8px; border-bottom:1px solid #eee; text-align:center;">${item.Quantity}</td>
+                            <td style="padding:8px; border-bottom:1px solid #eee; text-align:center;">${lineTotal} ฿</td>
+                        </tr>
+                    `;
+                });
+                html += '</table>';
+                content.innerHTML = html; // นำไปแสดงผล
+            })
+            .catch(error => {
+                console.error(error);
+                content.innerHTML = '<p style="color:red;">โหลดข้อมูลไม่สำเร็จ</p>';
+            });
+    } else {
+        // ถ้าเปิดอยู่ แล้วกดซ้ำ ให้ปิด (ซ่อน)
+        row.style.display = 'none';
+    }
 }
 // ==========================================
 // ฟังก์ชันสลับเมนูในหน้า Admin
