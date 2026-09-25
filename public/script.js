@@ -7,38 +7,90 @@ const registerFormWrapper = document.getElementById('registerFormWrapper');
 const showRegister = document.getElementById('showRegister');
 const showLogin = document.getElementById('showLogin');
 
-if (loginBtn){
+if (loginBtn && authModal) {
     loginBtn.addEventListener('click', () => {
         authModal.style.display = 'flex';
+        toggleAuthForm('login'); // เปิดมาหน้าแรกบังคับให้เป็น Login
     });
 }
 
-if (closeModal) {
-closeModal.addEventListener('click', () => {
-    authModal.style.display = 'none';
-    resetForms();
-});
+// ปิดป๊อปอัป
+function closeAuthModal() {
+    if (authModal) authModal.style.display = 'none';
 }
 
-window.addEventListener('click', (event) => {
-    if (event.target === authModal) {
-        authModal.style.display = 'none';
-        resetForms();
+// ฟังก์ชันสลับหน้า Login / Register
+function toggleAuthForm(type) {
+    if (type === 'register') {
+        document.getElementById('loginFormSection').style.display = 'none';
+        document.getElementById('registerFormSection').style.display = 'block';
+    } else {
+        document.getElementById('loginFormSection').style.display = 'block';
+        document.getElementById('registerFormSection').style.display = 'none';
     }
-});
-
-if (showRegister) {
-showRegister.addEventListener('click', () => {
-    loginFormWrapper.style.display = 'none';
-    registerFormWrapper.style.display = 'block';
-});
 }
 
-if (showLogin) {
-    showLogin.addEventListener('click', () => {
-        registerFormWrapper.style.display = 'none';
-        loginFormWrapper.style.display = 'block';
-    });
+// ฟังก์ชันสมัครสมาชิก
+function submitRegister() {
+    const firstName = document.getElementById('regFirstName').value;
+    const lastName = document.getElementById('regLastName').value;
+    const email = document.getElementById('regEmail').value;
+    const phone = document.getElementById('regPhone').value;
+    const user = document.getElementById('regUsername').value;
+    const pass = document.getElementById('regPassword').value;
+    const confirmPass = document.getElementById('regConfirmPassword').value;
+
+    // 1. เช็คว่ากรอกข้อมูลครบหรือไม่ (เว้น Address ไว้ไม่บังคับ)
+    if (!firstName || !lastName || !email || !phone || !user || !pass || !confirmPass) {
+        alert('กรุณากรอกข้อมูลให้ครบทุกช่อง');
+        return;
+    }
+
+    if (pass !== confirmPass) {
+        alert('รหัสผ่าน และ ยืนยันรหัสผ่าน ไม่ตรงกัน!');
+        return;
+    }
+
+    const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d).{8,}$/;
+    if (!passwordRegex.test(pass)) {
+        alert('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร และประกอบด้วยตัวอักษรและตัวเลข');
+        return;
+    }
+
+    // รวมข้อมูลทั้งหมดเพื่อส่งไป API
+    const newUserData = {
+        firstName: firstName,
+        lastName: lastName,
+        email: email,
+        phone: phone,
+        username: user,
+        password: pass
+    };
+
+    fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newUserData)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            toggleAuthForm('login'); 
+            
+            // เคลียร์ข้อมูลฟอร์ม
+            document.getElementById('regFirstName').value = '';
+            document.getElementById('regLastName').value = '';
+            document.getElementById('regEmail').value = '';
+            document.getElementById('regPhone').value = '';
+            document.getElementById('regUsername').value = '';
+            document.getElementById('regPassword').value = '';
+            document.getElementById('regConfirmPassword').value = '';
+        } else {
+            alert(data.error);
+        }
+    })
+    .catch(error => console.error('Error:', error));
 }
 
 function resetForms() {
@@ -211,34 +263,61 @@ if (closeModal && loginModal) {
     });
 }
 
-// ฟังก์ชันกดยืนยัน Login
+// ฟังก์ชันเข้าสู่ระบบ (Login)
 function submitLogin() {
-    const username = document.getElementById('loginUsername').value;
-    const password = document.getElementById('loginPassword').value;
+    const user = document.getElementById('loginUsername').value;
+    const pass = document.getElementById('loginPassword').value;
 
     fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username, password: password })
+        body: JSON.stringify({ username: user, password: pass })
     })
     .then(res => res.json())
     .then(data => {
         if (data.success) {
-            alert('ยินดีต้อนรับ ' + data.username);
-            localStorage.setItem('user', JSON.stringify(data)); // บันทึกข้อมูลผู้ใช้
-            
-            // ตรวจสอบ Role ว่าเป็น Admin หรือไม่
+            localStorage.setItem('user', JSON.stringify(data)); // บันทึกข้อมูลลงเครื่อง
+
             if (data.role === 'Admin') {
-                window.location.href = '/Admin.html'; // เด้งไปหน้า Admin
+                window.location.href = '/Admin.html';
             } else {
-                loginModal.style.display = 'none'; // ปิด Modal สำหรับลูกค้าทั่วไป
-                loginBtn.innerText = data.username; // เปลี่ยนข้อความปุ่ม
+                alert('ยินดีต้อนรับ ' + data.username);
+                closeAuthModal();     // 1. สั่งปิดป๊อปอัปทันที
+                checkLoginStatus();   // 2. เรียกคำสั่งซ่อนปุ่ม Login
             }
         } else {
-            alert(data.message);
+            alert(data.message || data.error);
         }
     })
     .catch(error => console.error('Error:', error));
+}
+
+// ==========================================
+// ฟังก์ชันจัดการปุ่ม Login/Logout บน Navbar
+// ==========================================
+function checkLoginStatus() {
+    const userObj = JSON.parse(localStorage.getItem('user'));
+    const loginBtn = document.getElementById('loginBtn');
+    
+    if (userObj && loginBtn) {
+        // 1. ซ่อนปุ่ม Login
+        loginBtn.style.display = 'none';
+
+        // 2. ตรวจสอบว่ามีปุ่ม Logout หรือยัง ถ้ายังไม่มีให้สร้างขึ้นมาใหม่
+        if (!document.getElementById('logoutBtn')) {
+            const logoutBtn = document.createElement('button');
+            logoutBtn.id = 'logoutBtn';
+            logoutBtn.innerText = 'Logout';
+            logoutBtn.style = 'background:#1f9c30; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;';
+            logoutBtn.onclick = function() {
+                localStorage.removeItem('user'); // ลบข้อมูลตอนกดออก
+                window.location.reload();        // รีเฟรชหน้าเว็บใหม่
+            };
+            
+            // นำปุ่ม Logout ไปวางแทนที่ข้างๆ ปุ่ม Login เดิม
+            loginBtn.parentNode.insertBefore(logoutBtn, loginBtn.nextSibling);
+        }
+    }
 }
 
 
@@ -506,6 +585,66 @@ function submitUpdateStatus() {
     .catch(error => console.error('Error:', error));
 }
 
+// ==========================================
+// ระบบ Profile (หน้า profile.html)
+// ==========================================
+function loadProfile() {
+    const displayPoints = document.getElementById('displayPoints');
+    if (!displayPoints) return; // ถ้าไม่ได้อยู่หน้า Profile ให้ข้ามไป
+
+    const userObj = JSON.parse(localStorage.getItem('user'));
+    if (!userObj) {
+        alert('Please log in first');
+        window.location.href = '/';
+        return;
+    }
+
+    // ดึงข้อมูลผู้ใช้จาก API
+    fetch(`/api/user/${userObj.userId}`)
+        .then(res => res.json())
+        .then(data => {
+            // ใส่แต้มลงในหน้าจอ
+            document.getElementById('displayPoints').innerText = data.Points || 0;
+            
+            // ใส่ข้อมูลลงในฟอร์ม
+            document.getElementById('profFirstName').value = data.FirstName || '';
+            document.getElementById('profLastName').value = data.LastName || '';
+            document.getElementById('profEmail').value = data.Email || '';
+            document.getElementById('profPhone').value = data.Phone || '';
+            document.getElementById('profAddress').value = data.Address || '';
+        })
+        .catch(error => console.error('Error fetching profile:', error));
+}
+
+// ฟังก์ชันบันทึกข้อมูล Profile
+function updateProfile(event) {
+    event.preventDefault();
+    const userObj = JSON.parse(localStorage.getItem('user'));
+    
+    const updatedData = {
+        firstName: document.getElementById('profFirstName').value,
+        lastName: document.getElementById('profLastName').value,
+        email: document.getElementById('profEmail').value,
+        phone: document.getElementById('profPhone').value,
+        address: document.getElementById('profAddress').value
+    };
+
+    fetch(`/api/user/${userObj.userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert('Complete: ' + data.message);
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => console.error('Error updating profile:', error));
+}
+
 // สั่งให้ทำงานเมื่อโหลดหน้าเว็บเสร็จ
 document.addEventListener('DOMContentLoaded', () => {
     loadCategories();  // โหลดหมวดหมู่ (สำหรับหน้าแรก)
@@ -514,4 +653,6 @@ document.addEventListener('DOMContentLoaded', () => {
     loadCartItems();   // โหลดรายการสินค้าในตะกร้า (สำหรับหน้า Cart)
     loadAdminProducts(); // โหลดรายการสินค้า (สำหรับหน้า Admin)
     loadAdminOrders();   // โหลดรายการคำสั่งซื้อ (สำหรับหน้า Admin)
+    loadProfile();     // โหลดข้อมูลโปรไฟล์ (สำหรับหน้า Profile)  
+    checkLoginStatus(); // ตรวจสอบสถานะการเข้าสู่ระบบ
 });

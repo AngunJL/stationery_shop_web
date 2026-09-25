@@ -3,82 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile - Stationery Shop</title>
+    <title>My Profile - Stationery Shop</title>
     <link rel="stylesheet" href="/style.css">
 </head>
-<body>
-    <nav class="navbar">
-        <div class="logo"><h2>StationeryShop</h2></div>
+<body style="background-color: #f4f7f6;">
+
+    <!-- Navbar -->
+    <nav class="navbar" style="background-color: #1f9c30">
+        <div class="logo"><h2 style="color:white;">StationeryShop</h2></div>
         <ul class="nav-links">
             <li><a href="/">Home</a></li>
-            <li><a href="/cart">Cart <span id="cart-count">(0)</span></a></li>
-            <li><a href="/profile" class="active">Profile</a></li>
+            <li><a href="/cart">Cart</a></li>
+            <li><a href="/profile" style="color:#007bff; font-weight:bold;">Profile</a></li>
+            <li><button onclick="logout()" style="background:#2f612b; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">Logout</button></li>
         </ul>
     </nav>
 
-    <main class="container">
-        <div class="profile-header">
-            <h2>My Profile</h2>
-            <p>Welcome back, John Doe</p>
+    <main class="container" style="max-width: 600px; margin: 40px auto; background:white; padding:30px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.1);">
+        <h2 style="text-align:center; border-bottom: 2px solid #eee; padding-bottom: 10px;">My Profile</h2>
+        
+        <!-- แสดงแต้ม Points -->
+        <div style="text-align:center; margin: 20px 0; padding: 20px; background: #e3f2fd; border-radius: 10px;">
+            <p style="margin: 0; font-size: 18px; color: #555;">Current Points</p>
+            <h1 style="margin: 5px 0 0 0; color: #0da146; font-size: 40px;"><span id="displayPoints">0</span> <span style="font-size: 20px;">Points</span></h1>
         </div>
 
-        <!-- Tabs -->
-        <div class="tabs">
-            <button class="tab-btn active" onclick="showTab('info')">Personal Info</button>
-            <button class="tab-btn" onclick="showTab('orders')">Order History</button>
-        </div>
-
-        <!-- Tab Content: Info -->
-        <div id="info" class="tab-content active-content">
-            <div class="info-card">
-                <h3>Account Details</h3>
-                <p><strong>Username:</strong> johndoe99</p>
-                <p><strong>Name:</strong> John Doe</p>
-                <p><strong>Points:</strong> <span class="text-highlight">150 Points</span></p>
-                <p><strong>Default Address:</strong> 123 Main St, Bangkok</p>
-                <button class="btn-submit" style="width: auto; margin-top: 15px;">Edit Profile</button>
+        <!-- ฟอร์มแก้ไขข้อมูล -->
+        <form id="profileForm" onsubmit="updateProfile(event)">
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <div style="flex:1;">
+                    <label>First Name</label>
+                    <input type="text" id="profFirstName" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:5px;">
+                </div>
+                <div style="flex:1;">
+                    <label>Last Name</label>
+                    <input type="text" id="profLastName" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:5px;">
+                </div>
             </div>
-        </div>
+            
+            <div style="margin-bottom:15px;">
+                <label>Email</label>
+                <input type="email" id="profEmail" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:5px;">
+            </div>
 
-        <!-- Tab Content: Orders -->
-        <div id="orders" class="tab-content" style="display: none;">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Order ID</th>
-                        <th>Date</th>
-                        <th>Total Amount</th>
-                        <th>Delivery</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>#ORD-001</td>
-                        <td>2023-10-25</td>
-                        <td>120 THB</td>
-                        <td>Shipping</td>
-                        <td><span class="status-badge shipped">Shipped</span></td>
-                    </tr>
-                    <tr>
-                        <td>#ORD-002</td>
-                        <td>2023-10-28</td>
-                        <td>45 THB</td>
-                        <td>Pick-up</td>
-                        <td><span class="status-badge pending">Pending</span></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+            <div style="margin-bottom:15px;">
+                <label>Phone Number</label>
+                <input type="text" id="profPhone" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:5px;">
+            </div>
+
+            <div style="margin-bottom:20px;">
+                <label>Shipping Address</label>
+            <textarea id="profAddress" rows="3" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:5px; resize: none;"></textarea>            </div>
+
+            <button type="submit" style="width:100%; padding:12px; background:#28a745; color:white; border:none; border-radius:5px; font-size:16px; cursor:pointer;">Save Changes</button>
+        </form>
     </main>
 
-        <script src="/script.js">
-        function showTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById(tabId).style.display = 'block';
-            event.target.classList.add('active');
-        }
-    </script>
+    <script src="/script.js"></script>
 </body>
 </html>

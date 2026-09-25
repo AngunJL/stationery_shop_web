@@ -74,6 +74,29 @@ app.post('/api/login', (req, res) => {
     });
 });
 
+// API สำหรับสมัครสมาชิก (Register)
+app.post('/api/register', (req, res) => {
+    // รับค่าที่ส่งมาเพิ่ม
+    const { firstName, lastName, email, phone, username, password } = req.body;
+    
+    // 1. เช็คก่อนว่ามี Username นี้ในระบบหรือยัง
+    db.query('SELECT * FROM `User` WHERE Username = ?', [username], (err, results) => {
+        if (err) return res.status(500).json({ error: 'Database error' });
+        if (results.length > 0) return res.status(400).json({ error: 'Username already exists' });
+        
+        // 2. บันทึกข้อมูลส่วนตัว (ใส่ '' จองที่ว่างสำหรับ Address ไว้ก่อน)
+        const sql = "INSERT INTO `User` (Role, Username, Password, Points, FirstName, LastName, Email, Phone, Address) VALUES (?, ?, ?, 0, ?, ?, ?, ?, '')";
+        
+        db.query(sql, ['Customer', username, password, firstName, lastName, email, phone], (err, result) => {
+            if (err) {
+                console.error("❌ Database Insert Error:", err);
+                return res.status(500).json({ error: 'Failed to register user' });
+            }
+            res.json({ success: true, message: 'Registered successfully' });
+        });
+    });
+});
+
 app.get('/Admin.html', (req, res) => {
     res.sendFile(path.join(__dirname, '/views/Admin.html'));
 });
@@ -165,5 +188,35 @@ app.get('/api/admin/orders/:id/details', (req, res) => {
             return res.status(500).json({ error: 'Failed to fetch order details' });
         }
         res.json(results);
+    });
+});
+
+// เส้นทางสำหรับเปิดหน้า Profile
+app.get('/profile', (req, res) => {
+    res.sendFile(__dirname + '/views/profile.html');
+});
+
+// API สำหรับดึงข้อมูลผู้ใช้ (พร้อมแต้ม Points)
+app.get('/api/user/:id', (req, res) => {
+    const userId = req.params.id;
+    const sql = 'SELECT Username, Points, FirstName, LastName, Email, Phone, Address FROM `User` WHERE UserID = ?';
+    
+    db.query(sql, [userId], (err, results) => {
+        if (err) return res.status(500).json({ error: 'Database error' });
+        if (results.length === 0) return res.status(404).json({ error: 'ไม่พบผู้ใช้งาน' });
+        res.json(results[0]);
+    });
+});
+
+// API สำหรับอัปเดตข้อมูลส่วนตัว
+app.put('/api/user/:id', (req, res) => {
+    const userId = req.params.id;
+    const { firstName, lastName, email, phone, address } = req.body;
+    
+    const sql = 'UPDATE `User` SET FirstName = ?, LastName = ?, Email = ?, Phone = ?, Address = ? WHERE UserID = ?';
+    
+    db.query(sql, [firstName, lastName, email, phone, address, userId], (err, result) => {
+        if (err) return res.status(500).json({ success: false, error: 'ไม่สามารถอัปเดตข้อมูลได้' });
+        res.json({ success: true, message: 'บันทึกข้อมูลส่วนตัวเรียบร้อยแล้ว!' });
     });
 });
