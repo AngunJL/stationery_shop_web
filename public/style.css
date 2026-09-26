@@ -332,7 +332,7 @@ border-color: #0b5314;
 .sidebar-menu { list-style: none; padding: 0; margin: 0; }
 .menu-btn { width: 100%; text-align: left; background: none; border: none; color: #bdc3c7; padding: 15px 25px; font-size: 16px; cursor: pointer; display: block; text-decoration: none; }
 .menu-btn:hover, .menu-btn.active { background: #34495e; color: white; border-left: 4px solid #3498db; }
-.menu-btn.logout { margin-top: auto; color: #e74c3c; }
+.menu-btn.logout { margin-top: auto; color: #1f9743; }
 .admin-content { flex: 1; padding: 30px; background: #f8f9fa; overflow-y: auto; }
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .btn-edit { background: #f1c40f; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; color: #333; }

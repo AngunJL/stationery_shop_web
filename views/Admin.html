@@ -20,6 +20,8 @@
         <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
             <button id="btnMenuProducts" onclick="switchAdminMenu('products')" style="padding: 10px 20px; border: none; background: #247041; color: white; border-radius: 5px; cursor: pointer; font-size: 16px;">Manage Products</button>
             <button id="btnMenuOrders" onclick="switchAdminMenu('orders')" style="padding: 10px 20px; border: none; background: #f0f0f0; color: #333; border-radius: 5px; cursor: pointer; font-size: 16px;">Manage Orders</button>
+            <!-- เพิ่มปุ่ม Manage Users -->
+            <button id="btnMenuUsers" onclick="switchAdminMenu('users')" style="padding: 10px 20px; border: none; background: #f0f0f0; color: #333; border-radius: 5px; cursor: pointer; font-size: 16px;">Manage Users</button>
         </div>
 
         <!-- ============================== -->
@@ -50,7 +52,7 @@
         <!-- ส่วนที่ 2: หน้าจัดการคำสั่งซื้อ (ซ่อนไว้ก่อน) -->
         <!-- ============================== -->
         <div id="sectionOrders" style="display: none;">
-            <h2>จัดการคำสั่งซื้อ (Orders)</h2>
+            <h2>Manage Orders</h2>
             
             <table style="width: 100%; border-collapse: collapse; text-align: left; margin-top: 20px;">
                 <thead>
@@ -70,7 +72,31 @@
             </table>
         </div>
 
+        <!-- ============================== -->
+        <!-- ส่วนที่ 3: หน้าจัดการสมาชิก (ซ่อนไว้ก่อน) -->
+        <!-- ============================== -->
+        <div id="sectionUsers" style="display: none;">
+            <h2>Manage Users</h2>
+            
+            <table style="width: 100%; border-collapse: collapse; text-align: left; margin-top: 20px;">
+                <thead>
+                    <tr style="background-color: #f8f9fa;">
+                        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">ID</th>
+                        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">Username</th>
+                        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">Full-Name</th>
+                        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">Contact Information</th>
+                        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">Points</th>
+                        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">Status (Role)</th>
+                        <th style="padding: 12px; border-bottom: 2px solid #dee2e6; text-align:center;">Manage</th>
+                    </tr>
+                </thead>
+                <tbody id="adminUserTable">
+                </tbody>
+            </table>
+        </div>
+
     </main>
+
     <!-- ป๊อปอัปฟอร์มเพิ่มสินค้าใหม่ -->
     <div id="addProductModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
         <div style="background:white; padding:30px; border-radius:10px; width:400px; position:relative; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
@@ -92,7 +118,7 @@
                 </div>
                 <div style="margin-bottom:10px;">
                     <label>รายละเอียด:</label>
-                    <textarea id="newProductDesc" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;"></textarea>
+                    <textarea id="newProductDesc" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc; resize: none;"></textarea>
                 </div>
                 <div style="margin-bottom:10px;">
                     <label>ราคา (บาท):</label>
@@ -110,13 +136,13 @@
             </form>
         </div>
     </div>
+
     <!-- ป๊อปอัปอัปเดตสถานะคำสั่งซื้อ -->
     <div id="updateStatusModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
         <div style="background:white; padding:30px; border-radius:10px; width:350px; position:relative; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
             <span onclick="closeUpdateStatusModal()" style="position:absolute; top:10px; right:15px; cursor:pointer; font-size:24px; font-weight:bold;">&times;</span>
             <h2 style="margin-top:0;">Update Status</h2>
             
-            <!-- ซ่อน OrderID ไว้เพื่อส่งไปให้ API -->
             <input type="hidden" id="updateOrderId">
             
             <div style="margin-bottom:20px;">
@@ -133,6 +159,71 @@
             <button onclick="submitUpdateStatus()" style="width:100%; padding:10px; background:#28a745; color:white; border:none; border-radius:5px; cursor:pointer; font-size:16px;">บันทึกสถานะ</button>
         </div>
     </div>
+
+    <!-- ป๊อปอัปแก้ไขข้อมูล User -->
+    <div id="editUserModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+        <div style="background:white; padding:30px; border-radius:10px; width:400px; position:relative; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+            <span onclick="document.getElementById('editUserModal').style.display='none'" style="position:absolute; top:10px; right:15px; cursor:pointer; font-size:24px; font-weight:bold;">&times;</span>
+            <h2 style="margin-top:0;">แก้ไขข้อมูลสมาชิก</h2>
+            <form id="editUserForm" onsubmit="submitEditUser(event)">
+                <input type="hidden" id="editUserId">
+                <div style="display:flex; gap:10px; margin-bottom:10px;">
+                    <div style="flex:1;">
+                        <label>ชื่อจริง:</label>
+                        <input type="text" id="editUserFName" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
+                    </div>
+                    <div style="flex:1;">
+                        <label>นามสกุล:</label>
+                        <input type="text" id="editUserLName" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
+                    </div>
+                </div>
+                <div style="margin-bottom:10px;">
+                    <label>อีเมล:</label>
+                    <input type="email" id="editUserEmail" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
+                </div>
+                <div style="margin-bottom:10px;">
+                    <label>เบอร์โทร:</label>
+                    <input type="text" id="editUserPhone" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
+                </div>
+                <div style="display:flex; gap:10px; margin-bottom:20px;">
+                    <div style="flex:1;">
+                        <label>Points:</label>
+                        <input type="number" id="editUserPoints" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
+                    </div>
+                    <div style="flex:1;">
+                        <label>สถานะ (Role):</label>
+                        <select id="editUserRole" style="width:100%; padding:8px; border-radius:5px; border:1px solid #ccc;">
+                            <option value="Customer">Customer</option>
+                            <option value="Admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" style="width:100%; padding:10px; background:#007bff; color:white; border:none; border-radius:5px; cursor:pointer; font-size:16px;">บันทึกการแก้ไข</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ป๊อปอัปดูประวัติคำสั่งซื้อ -->
+    <div id="userHistoryModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+        <div style="background:white; padding:30px; border-radius:10px; width:600px; max-height: 80vh; overflow-y: auto; position:relative; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+            <span onclick="document.getElementById('userHistoryModal').style.display='none'" style="position:absolute; top:10px; right:15px; cursor:pointer; font-size:24px; font-weight:bold;">&times;</span>
+            <h2 style="margin-top:0;">ประวัติคำสั่งซื้อ: <span id="historyUsername" style="color:#007bff;"></span></h2>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 15px; text-align: left;">
+                <thead style="background: #f8f9fa;">
+                    <tr>
+                        <th style="padding:10px; border-bottom:2px solid #ddd;">Order ID</th>
+                        <th style="padding:10px; border-bottom:2px solid #ddd;">วันที่</th>
+                        <th style="padding:10px; border-bottom:2px solid #ddd;">ยอดรวม</th>
+                        <th style="padding:10px; border-bottom:2px solid #ddd;">สถานะ</th>
+                    </tr>
+                </thead>
+                <tbody id="userHistoryTable">
+                    <!-- ประวัติการสั่งซื้อจะแสดงที่นี่ -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <script src="/script.js"></script>
 </body>
 </html>

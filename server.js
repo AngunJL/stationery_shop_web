@@ -208,6 +208,17 @@ app.get('/api/user/:id', (req, res) => {
     });
 });
 
+// ==========================================
+// API ประวัติการสั่งซื้อ (หน้า Profile ลูกค้า)
+// ==========================================
+app.get('/api/user/:id/orders', (req, res) => {
+    const sql = 'SELECT OrderID, OrderDate, TotalAmount, Status FROM `Order` WHERE UserID = ? ORDER BY OrderDate DESC';
+    db.query(sql, [req.params.id], (err, results) => {
+        if (err) return res.status(500).json({ error: 'Database error' });
+        res.json(results);
+    });
+});
+
 // API สำหรับอัปเดตข้อมูลส่วนตัว
 app.put('/api/user/:id', (req, res) => {
     const userId = req.params.id;
@@ -218,5 +229,110 @@ app.put('/api/user/:id', (req, res) => {
     db.query(sql, [firstName, lastName, email, phone, address, userId], (err, result) => {
         if (err) return res.status(500).json({ success: false, error: 'ไม่สามารถอัปเดตข้อมูลได้' });
         res.json({ success: true, message: 'บันทึกข้อมูลส่วนตัวเรียบร้อยแล้ว!' });
+    });
+});
+// API สำหรับดึงรายละเอียดสินค้าในบิล
+app.get('/api/orders/:id/details', (req, res) => {
+    const sql = `
+        SELECT od.Quantity, od.UnitPrice, p.ProductName 
+        FROM OrderDetail od 
+        JOIN Product p ON od.ProductID = p.ProductID 
+        WHERE od.OrderID = ?
+    `;
+    db.query(sql, [req.params.id], (err, results) => {
+        if (err) return res.status(500).json({ error: 'Database error' });
+        res.json(results);
+    });
+});
+
+// API สำหรับการสั่งซื้อ (Checkout)
+app.post('/api/checkout', (req, res) => {
+    const { userId, cartItems, deliveryMethod, shippingAddress, pointsUsed, totalAmount } = req.body;
+    
+    // 1. เช็คความถูกต้องของข้อมูล
+    if (!userId || !cartItems || cartItems.length === 0) {
+        return res.status(400).json({ success: false, error: 'ข้อมูลไม่ครบถ้วน หรือไม่มีสินค้าในตะกร้า' });
+    }
+
+    // 2. บันทึกข้อมูลลงตาราง Order (เพิ่ม NetAmount เข้าไป)
+    const orderSql = "INSERT INTO `Order` (UserID, OrderDate, TotalAmount, NetAmount, DeliveryMethod, ShippingAddress, Status) VALUES (?, NOW(), ?, ?, ?, ?, 'Pending')";
+    
+    // ส่งค่า totalAmount เข้าไป 2 ครั้ง (เพื่อให้ใส่ทั้ง TotalAmount และ NetAmount)
+    db.query(orderSql, [userId, totalAmount, totalAmount, deliveryMethod, shippingAddress], (err, orderResult) => {
+        if (err) {
+            console.error("❌ Insert Order Error:", err);
+            return res.status(500).json({ success: false, error: 'Cannot insert order' });
+        }
+        
+        const orderId = orderResult.insertId; // ดึง ID ของบิลที่เพิ่งสร้าง
+
+        // 3. บันทึกรายการสินค้าลงตาราง OrderDetail
+        const detailSql = "INSERT INTO OrderDetail (OrderID, ProductID, Quantity, UnitPrice) VALUES ?";
+        const detailValues = cartItems.map(item => [orderId, item.id || item.productId, item.quantity, item.price]);
+
+        db.query(detailSql, [detailValues], (err, detailResult) => {
+            if (err) {
+                console.error("❌ Insert OrderDetail Error:", err);
+                return res.status(500).json({ success: false, error: 'Cannot insert order details' });
+            }
+
+            // 4. หักแต้ม Points ของลูกค้า (ถ้ามีการใช้)
+            if (pointsUsed > 0) {
+                db.query("UPDATE `User` SET Points = Points - ? WHERE UserID = ?", [pointsUsed, userId]);
+            }
+
+            res.json({ success: true, message: 'Order placed successfully!' });
+        });
+    });
+});
+
+// API สำหรับดึงรายชื่อสมาชิกทั้งหมด (Admin)
+app.get('/api/admin/users', (req, res) => {
+    // ดึงข้อมูลทั้งหมดเรียงจากลูกค้าที่สมัครล่าสุดขึ้นก่อน
+    const sql = 'SELECT UserID, Username, FirstName, LastName, Email, Phone, Points, Role FROM `User` ORDER BY UserID DESC';
+    
+    db.query(sql, (err, results) => {
+        if (err) {
+            console.error('Error pulling user data:', err);
+            return res.status(500).json({ error: 'Error pulling user data' });
+        }
+        res.json(results);
+    });
+});
+
+// ==========================================
+// API สำหรับจัดการ User (Admin)
+// ==========================================
+
+// 1. ดูประวัติคำสั่งซื้อของ User แต่ละคน
+app.get('/api/admin/users/:id/orders', (req, res) => {
+    const sql = 'SELECT OrderID, OrderDate, TotalAmount, Status FROM `Order` WHERE UserID = ? ORDER BY OrderDate DESC';
+    db.query(sql, [req.params.id], (err, results) => {
+        if (err) return res.status(500).json({ error: 'Database error' });
+        res.json(results);
+    });
+});
+
+// 2. อัปเดตข้อมูล User (แก้ไขชื่อ, แต้ม, และ Role)
+app.put('/api/admin/users/:id', (req, res) => {
+    const { firstName, lastName, email, phone, points, role } = req.body;
+    const sql = 'UPDATE `User` SET FirstName=?, LastName=?, Email=?, Phone=?, Points=?, Role=? WHERE UserID=?';
+    
+    db.query(sql, [firstName, lastName, email, phone, points, role, req.params.id], (err, result) => {
+        if (err) return res.status(500).json({ success: false, error: 'อัปเดตข้อมูลไม่สำเร็จ' });
+        res.json({ success: true, message: 'บันทึกข้อมูลผู้ใช้เรียบร้อยแล้ว' });
+    });
+});
+
+// 3. ลบ User
+app.delete('/api/admin/users/:id', (req, res) => {
+    db.query('DELETE FROM `User` WHERE UserID=?', [req.params.id], (err, result) => {
+        if (err) {
+            if (err.errno === 1451) {
+                return res.status(400).json({ success: false, error: 'ไม่สามารถลบได้ เนื่องจากผู้ใช้นี้มีประวัติคำสั่งซื้อในระบบ' });
+            }
+            return res.status(500).json({ success: false, error: 'ลบผู้ใช้ไม่สำเร็จ' });
+        }
+        res.json({ success: true, message: 'ลบผู้ใช้สำเร็จ' });
     });
 });

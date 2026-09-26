@@ -24,10 +24,10 @@
             <h2>Your Cart</h2>
             <!-- กล่องนี้จะให้ JavaScript ดึงสินค้ามาใส่ -->
             <div id="cartItemsContainer">
-                <p>ตะกร้าสินค้าของคุณว่างเปล่า</p>
+                <p>Your cart is empty</p>
             </div>
         </div>
-
+        
         <!-- Right Side: Checkout Summary -->
         <div class="checkout-section">
             <h2>Order Summary</h2>
@@ -41,19 +41,22 @@
             <div class="form-group">
                 <label>Delivery Method</label>
                 <select id="deliveryMethod">
-                    <option value="pickup">Pick-up at Store</option>
-                    <option value="shipping">Shipping</option>
+                    <option value="Pick-up">Pick-up at Store</option>
+                    <option value="Shipping">Shipping</option>
                 </select>
             </div>
 
             <div class="form-group" id="addressGroup">
                 <label>Shipping Address</label>
-                <textarea rows="3" placeholder="Enter your address..."></textarea>
+                <textarea id="shippingAddress" rows="3" placeholder="Enter your address..." style="resize: none;"></textarea>
             </div>
 
             <div class="form-group">
-                <label>Use Points (You have 100 points)</label>
-                <input type="number" placeholder="Enter points to use" min="0" max="100">
+                <label>Use Points (You have <span id="cartUserPoints">0</span> points)</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="number" id="pointsToUse" oninput="applyPointsDiscount()" placeholder="Enter points to use" min="0" style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <small id="discountResult" style="color: #28a745; font-weight: bold; display: none; margin-top: 5px;"></small>
             </div>
 
             <hr class="divider">

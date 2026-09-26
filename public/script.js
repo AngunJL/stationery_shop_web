@@ -42,18 +42,19 @@ function submitRegister() {
 
     // 1. เช็คว่ากรอกข้อมูลครบหรือไม่ (เว้น Address ไว้ไม่บังคับ)
     if (!firstName || !lastName || !email || !phone || !user || !pass || !confirmPass) {
-        alert('กรุณากรอกข้อมูลให้ครบทุกช่อง');
+
+        showCustomAlert('Please fill in all required fields.', false);
         return;
     }
 
     if (pass !== confirmPass) {
-        alert('รหัสผ่าน และ ยืนยันรหัสผ่าน ไม่ตรงกัน!');
+        showCustomAlert('Password and Confirm Password do not match.', false);
         return;
     }
 
     const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d).{8,}$/;
     if (!passwordRegex.test(pass)) {
-        alert('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร และประกอบด้วยตัวอักษรและตัวเลข');
+        showCustomAlert('Password must be at least 8 characters and contain both letters and numbers.', false);
         return;
     }
 
@@ -75,7 +76,7 @@ function submitRegister() {
     .then(res => res.json())
     .then(data => {
         if (data.success) {
-            alert(data.message);
+            showCustomAlert(data.message, true);
             toggleAuthForm('login'); 
             
             // เคลียร์ข้อมูลฟอร์ม
@@ -87,7 +88,7 @@ function submitRegister() {
             document.getElementById('regPassword').value = '';
             document.getElementById('regConfirmPassword').value = '';
         } else {
-            alert(data.error);
+            showCustomAlert('Error: ' + data.error, false);
         }
     })
     .catch(error => console.error('Error:', error));
@@ -165,7 +166,7 @@ function addToCart(id, name, price) {
     
     // อัปเดตตัวเลข
     updateCartCount();
-    alert(`เพิ่ม ${name} ลงตะกร้าแล้ว!`);
+
 }
 
 // 4. ฟังก์ชันอัปเดตตัวเลขตะกร้าด้านบน (Navbar)
@@ -246,6 +247,139 @@ function changeQuantity(id, newQty) {
     }
 }
 // ==========================================
+// ฟังก์ชัน Checkout (ยืนยันการสั่งซื้อ)
+// ==========================================
+function checkout() {
+    const userObj = JSON.parse(localStorage.getItem('user'));
+    if (!userObj) {
+
+        showCustomAlert('Please log in before checking out.', false);
+        return;
+    }
+
+    // สมมติว่าตะกร้าเก็บอยู่ใน localStorage ชื่อ 'cart'
+    const cartItems = JSON.parse(localStorage.getItem('cart')) || [];
+    if (cartItems.length === 0) {
+        showCustomAlert('Your cart is empty. Please add some items before checking out.', false);
+        return;
+    }
+
+    const deliveryMethod = document.getElementById('deliveryMethod').value;
+    const shippingAddress = document.getElementById('shippingAddress').value;
+
+    // เช็คว่าถ้าให้จัดส่ง ต้องกรอกที่อยู่
+    if (deliveryMethod === 'shipping' && !shippingAddress.trim()) {
+        showCustomAlert('Please enter an address for shipping.', false);
+        return;
+    }
+
+    // ดึงราคารวมสุทธิ (ที่อาจจะหักส่วนลดไปแล้ว)
+    const finalTotalText = document.getElementById('cartTotal').innerText;
+    const finalTotal = parseInt(finalTotalText.replace(/\D/g, '')); // ตัดเอาเฉพาะตัวเลข
+
+    // รวบรวมข้อมูลทั้งหมด
+    const orderData = {
+        userId: userObj.userId,
+        cartItems: cartItems,
+        deliveryMethod: deliveryMethod,
+        shippingAddress: deliveryMethod === 'pickup' ? 'มารับที่ร้าน' : shippingAddress,
+        pointsUsed: appliedDiscount,
+        totalAmount: finalTotal
+    };
+
+    // ส่งไปที่ API
+    fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            localStorage.removeItem('cart'); // ล้างตะกร้าหลังสั่งซื้อสำเร็จ
+            window.location.href = '/'; // เด้งกลับไปหน้าแรก (หรือเปลี่ยนเป็น '/profile' ได้)
+        } else {
+            showCustomAlert('Error: ' + data.error, false);
+        }
+    })
+    .catch(err => console.error('Error:', err));
+}
+
+// ==========================================
+// ระบบ Points ส่วนลด (หน้า Cart)
+// ==========================================
+let userMaxPoints = 0;
+let appliedDiscount = 0;
+let originalTotal = 0; // เก็บราคาสุทธิก่อนหักส่วนลด
+
+// ดึงแต้มจาก Database มาโชว์
+function fetchUserPointsForCart() {
+    const userObj = JSON.parse(localStorage.getItem('user'));
+    const pointsDisplay = document.getElementById('cartUserPoints');
+    if (!userObj || !pointsDisplay) return; 
+
+    const userId = userObj.userId || userObj.id || userObj.UserID;
+    if (!userId) return;
+
+    fetch(`/api/user/${userId}`)
+        .then(res => res.json())
+        .then(data => {
+            // โชว์แต้ม
+            userMaxPoints = data.Points || 0;
+            pointsDisplay.innerText = userMaxPoints;
+            
+            // --- ดึงที่อยู่มาใส่อัตโนมัติ ---
+            const addressInput = document.getElementById('shippingAddress');
+            if (addressInput && data.Address) {
+                addressInput.value = data.Address;
+            }
+        })
+        .catch(error => console.error('Error fetching points:', error));
+}
+
+// ฟังก์ชันคำนวณแต้มอัตโนมัติเมื่อพิมพ์
+function applyPointsDiscount() {
+    const inputElement = document.getElementById('pointsToUse');
+    let inputPoints = parseInt(inputElement.value) || 0;
+    const resultText = document.getElementById('discountResult');
+    
+    // ดึงราคารวมมาเก็บไว้ใน originalTotal (ทำแค่ครั้งเดียว)
+    const currentTotalText = document.getElementById('cartTotal').innerText;
+    if (originalTotal === 0) originalTotal = parseInt(currentTotalText.replace(/\D/g, ''));
+
+    // ป้องกันการพิมพ์ค่าติดลบ
+    if (inputPoints < 0) inputPoints = 0;
+    
+    // ถ้าพิมพ์เกินแต้มที่มี ให้ปรับลงมาเท่ากับแต้มสูงสุด
+    if (inputPoints > userMaxPoints) {
+        inputPoints = userMaxPoints;
+    }
+    
+    // ถ้าพิมพ์แต้มเกินราคาสินค้ารวม ให้ปรับลงมาเท่ากับราคาสินค้า
+    if (inputPoints > originalTotal) {
+        inputPoints = originalTotal;
+    }
+
+    // อัปเดตค่ากลับไปที่ช่อง input เผื่อกรณีที่ระบบปรับตัวเลขให้
+    if (inputElement.value !== "" && parseInt(inputElement.value) !== inputPoints) {
+        inputElement.value = inputPoints;
+    }
+
+    appliedDiscount = inputPoints;
+    const newTotal = originalTotal - appliedDiscount;
+    
+    // อัปเดตราคาบนหน้าจอ
+    document.getElementById('cartTotal').innerText = `${newTotal} THB`;
+    
+    // แสดงข้อความส่วนลดถ้ามีการใช้แต้ม
+    if (appliedDiscount > 0) {
+        resultText.style.display = 'block';
+        resultText.innerText = `Discount: ${appliedDiscount} THB (Remaining ${userMaxPoints - appliedDiscount} Points)`;
+    } else {
+        resultText.style.display = 'none';
+    }
+}
+// ==========================================
 // ระบบ Login
 // ==========================================
 
@@ -281,12 +415,11 @@ function submitLogin() {
             if (data.role === 'Admin') {
                 window.location.href = '/Admin.html';
             } else {
-                alert('ยินดีต้อนรับ ' + data.username);
-                closeAuthModal();     // 1. สั่งปิดป๊อปอัปทันที
+                showCustomAlert('Welcome back ' + data.username, true);                closeAuthModal();     // 1. สั่งปิดป๊อปอัปทันที
                 checkLoginStatus();   // 2. เรียกคำสั่งซ่อนปุ่ม Login
             }
         } else {
-            alert(data.message || data.error);
+            showCustomAlert(data.message || data.error, false);
         }
     })
     .catch(error => console.error('Error:', error));
@@ -307,14 +440,14 @@ function checkLoginStatus() {
         if (!document.getElementById('logoutBtn')) {
             const logoutBtn = document.createElement('button');
             logoutBtn.id = 'logoutBtn';
-            logoutBtn.innerText = 'Logout';
-            logoutBtn.style = 'background:#1f9c30; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;';
+            logoutBtn.innerText = 'Logout (' + userObj.username + ')';
+            logoutBtn.style = 'background:#ff6b6b; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;';
             logoutBtn.onclick = function() {
-                localStorage.removeItem('user'); // ลบข้อมูลตอนกดออก
-                window.location.reload();        // รีเฟรชหน้าเว็บใหม่
+                localStorage.removeItem('user'); 
+                localStorage.removeItem('cart'); // เพิ่มบรรทัดนี้
+                window.location.href = '/';      // เปลี่ยนจาก reload เป็นกลับไปหน้าแรก
             };
             
-            // นำปุ่ม Logout ไปวางแทนที่ข้างๆ ปุ่ม Login เดิม
             loginBtn.parentNode.insertBefore(logoutBtn, loginBtn.nextSibling);
         }
     }
@@ -350,8 +483,9 @@ function loadAdminProducts() {
 }
 
 function logout() {
-    localStorage.removeItem('user');
-    window.location.href = '/';
+    localStorage.removeItem('user'); // ลบข้อมูลผู้ใช้
+    localStorage.removeItem('cart'); // ล้างตะกร้าสินค้า
+    window.location.href = '/';      // กลับหน้าแรก
 }
 
 // ==========================================
@@ -390,12 +524,12 @@ function submitNewProduct(event) {
     .then(res => res.json())
     .then(data => {
         if (data.success) {
-            alert('Added new product successfully!');
+            showCustomAlert('Product added successfully!', true);
             closeAddProductModal(); // ปิดหน้าต่าง
             document.getElementById('addProductForm').reset(); // ล้างฟอร์มให้ว่าง
             loadAdminProducts(); // รีเฟรชตารางให้สินค้าใหม่โผล่ขึ้นมาทันที!
         } else {
-            alert('Error: ' + data.error);
+            showCustomAlert('Error: ' + data.error, false);
         }
     })
     .catch(error => console.error('Error:', error));
@@ -413,10 +547,10 @@ function deleteProduct(id) {
         .then(res => res.json())
         .then(data => {
             if (data.success) {
-                alert('Deleted product successfully!');
+                showCustomAlert('Deleted product successfully!', true);
                 loadAdminProducts(); // รีเฟรชตารางใหม่เพื่อให้สินค้าที่โดนลบหายไป
             } else {
-                alert('Error: ' + data.error);
+                showCustomAlert('Error: ' + data.error, false);
             }
         })
         .catch(error => console.error('Error:', error));
@@ -515,30 +649,54 @@ function toggleOrderDetails(orderId) {
 function switchAdminMenu(menuName) {
     const sectionProducts = document.getElementById('sectionProducts');
     const sectionOrders = document.getElementById('sectionOrders');
+    const sectionUsers = document.getElementById('sectionUsers'); // เพิ่มดึงข้อมูลแท็บสมาชิก
     const btnProducts = document.getElementById('btnMenuProducts');
     const btnOrders = document.getElementById('btnMenuOrders');
+    const btnUsers = document.getElementById('btnMenuUsers'); // เพิ่มดึงข้อมูลปุ่มสมาชิก
 
     // ถ้ากดปุ่ม สินค้า
     if (menuName === 'products') {
         sectionProducts.style.display = 'block'; // โชว์ตารางสินค้า
         sectionOrders.style.display = 'none';    // ซ่อนตารางคำสั่งซื้อ
+        sectionUsers.style.display = 'none';     // ซ่อนตารางสมาชิก
         
-        // เปลี่ยนสีปุ่มให้รู้ว่ากำลังเลือกหน้านี้อยู่
+        // เปลี่ยนสีปุ่ม
         btnProducts.style.background = '#247041';
         btnProducts.style.color = 'white';
         btnOrders.style.background = '#f0f0f0';
         btnOrders.style.color = '#333';
+        btnUsers.style.background = '#f0f0f0';
+        btnUsers.style.color = '#333';
     } 
     // ถ้ากดปุ่ม คำสั่งซื้อ
     else if (menuName === 'orders') {
         sectionProducts.style.display = 'none';  // ซ่อนตารางสินค้า
         sectionOrders.style.display = 'block';   // โชว์ตารางคำสั่งซื้อ
+        sectionUsers.style.display = 'none';     // ซ่อนตารางสมาชิก
         
         // เปลี่ยนสีปุ่ม
         btnOrders.style.background = '#247041';
         btnOrders.style.color = 'white';
         btnProducts.style.background = '#f0f0f0';
         btnProducts.style.color = '#333';
+        btnUsers.style.background = '#f0f0f0';
+        btnUsers.style.color = '#333';
+    }
+    // ถ้ากดปุ่ม จัดการสมาชิก
+    else if (menuName === 'users') {
+        sectionProducts.style.display = 'none';  // ซ่อนตารางสินค้า
+        sectionOrders.style.display = 'none';    // ซ่อนตารางคำสั่งซื้อ
+        sectionUsers.style.display = 'block';    // โชว์ตารางสมาชิก
+        
+        // เปลี่ยนสีปุ่ม
+        btnUsers.style.background = '#247041';
+        btnUsers.style.color = 'white';
+        btnProducts.style.background = '#f0f0f0';
+        btnProducts.style.color = '#333';
+        btnOrders.style.background = '#f0f0f0';
+        btnOrders.style.color = '#333';
+
+        loadAdminUsers(); // โหลดข้อมูลสมาชิกเมื่อกดแท็บนี้
     }
 }
 
@@ -559,6 +717,153 @@ function openUpdateStatusModal(id, currentStatus) {
     document.getElementById('updateStatusModal').style.display = 'flex';
 }
 
+// ==========================================
+// ระบบดึงข้อมูลสมาชิก (Admin)
+// ==========================================
+function loadAdminUsers() {
+    const userTable = document.getElementById('adminUserTable');
+    if (!userTable) return; 
+
+    // เปลี่ยนข้อความตารางเป็น กำลังโหลด ระหว่างรอข้อมูล (ปรับเป็น colspan 7)
+    userTable.innerHTML = '<tr><td colspan="7" style="padding:15px; text-align:center;">กำลังโหลดข้อมูล...</td></tr>';
+
+    fetch('/api/admin/users')
+        .then(res => res.json())
+        .then(users => {
+            userTable.innerHTML = ''; // ล้างตาราง
+            if (users.length === 0) {
+                userTable.innerHTML = '<tr><td colspan="7" style="padding:15px; text-align:center;">ยังไม่มีข้อมูลสมาชิกในระบบ</td></tr>';
+                return;
+            }
+
+            users.forEach(u => {
+                const fullName = (u.FirstName || u.LastName) ? `${u.FirstName || ''} ${u.LastName || ''}` : '<span style="color:#999;">-</span>';
+                const contact = (u.Email || u.Phone) ? `${u.Email || '-'}<br>${u.Phone || '-'}` : '<span style="color:#999;">-</span>';
+                
+                const roleBadge = u.Role === 'Admin' 
+                    ? `<span style="padding: 3px 8px; border-radius: 12px; background: #f8d7da; color: #721c24; font-size: 13px;">${u.Role}</span>`
+                    : `<span style="padding: 3px 8px; border-radius: 12px; background: #e3f2fd; color: #0d47a1; font-size: 13px;">${u.Role}</span>`;
+
+                // สร้างตัวแปรเก็บสไตล์ปุ่ม ให้มีความกว้างเท่ากัน (width: 60px)
+                const btnStyle = "width: 60px; padding: 5px 0; border: none; border-radius: 3px; cursor: pointer; color: white; margin-right: 3px; margin-bottom: 3px; text-align: center; display: inline-block; font-size: 13px;";
+
+                userTable.innerHTML += `
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding:12px;">#${u.UserID}</td>
+                        <td style="padding:12px;"><strong>${u.Username}</strong></td>
+                        <td style="padding:12px;">${fullName}</td>
+                        <td style="padding:12px;">${contact}</td>
+                        <td style="padding:12px; color:#28a745; font-weight:bold;">${u.Points}</td>
+                        <td style="padding:12px;">${roleBadge}</td>
+                        <td style="padding:12px; text-align:center;">
+                            <!-- นำ btnStyle มาใช้กับทั้ง 3 ปุ่ม -->
+                            <button onclick="openEditUserModal(${u.UserID}, '${u.FirstName || ''}', '${u.LastName || ''}', '${u.Email || ''}', '${u.Phone || ''}', ${u.Points}, '${u.Role}')" style="${btnStyle} background:#ffc107; color:#000;">แก้ไข</button>
+                            <button onclick="viewUserHistory(${u.UserID}, '${u.Username}')" style="${btnStyle} background:#17a2b8;">ประวัติ</button>
+                            <button onclick="deleteUser(${u.UserID})" style="${btnStyle} background:#dc3545;">ลบ</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching users:', error);
+            userTable.innerHTML = '<tr><td colspan="7" style="padding:15px; text-align:center; color:red;">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
+        });
+}
+
+// ==========================================
+// ฟังก์ชันจัดการ User (แก้ไข / ลบ / ประวัติ)
+// ==========================================
+
+function openEditUserModal(id, fname, lname, email, phone, points, role) {
+    document.getElementById('editUserId').value = id;
+    document.getElementById('editUserFName').value = fname !== 'null' ? fname : '';
+    document.getElementById('editUserLName').value = lname !== 'null' ? lname : '';
+    document.getElementById('editUserEmail').value = email !== 'null' ? email : '';
+    document.getElementById('editUserPhone').value = phone !== 'null' ? phone : '';
+    document.getElementById('editUserPoints').value = points;
+    document.getElementById('editUserRole').value = role;
+    document.getElementById('editUserModal').style.display = 'flex'; // เปิดป๊อปอัป
+}
+
+function submitEditUser(event) {
+    event.preventDefault(); // ป้องกันหน้าเว็บรีเฟรช
+    const id = document.getElementById('editUserId').value;
+    const data = {
+        firstName: document.getElementById('editUserFName').value,
+        lastName: document.getElementById('editUserLName').value,
+        email: document.getElementById('editUserEmail').value,
+        phone: document.getElementById('editUserPhone').value,
+        points: document.getElementById('editUserPoints').value,
+        role: document.getElementById('editUserRole').value
+    };
+
+    fetch(`/api/admin/users/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('editUserModal').style.display = 'none'; // ปิดป๊อปอัป
+            loadAdminUsers(); // รีเฟรชตารางสมาชิกใหม่
+        } else {
+            showCustomAlert('Error: ' + data.error, false);
+        }
+    })
+    .catch(err => console.error('Error:', err));
+}
+
+function deleteUser(id) {
+    if (!confirm('Are you sure you want to delete this user? (This action cannot be undone)')) return;
+
+    fetch(`/api/admin/users/${id}`, { method: 'DELETE' })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            loadAdminUsers(); // รีเฟรชตารางสมาชิกใหม่
+        } else {
+            showCustomAlert('Error: ' + data.error, false);
+        }
+    })
+    .catch(err => console.error('Error:', err));
+}
+
+function viewUserHistory(id, username) {
+    document.getElementById('historyUsername').innerText = username;
+    const historyTable = document.getElementById('userHistoryTable');
+    historyTable.innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading...</td></tr>';
+    document.getElementById('userHistoryModal').style.display = 'flex'; // เปิดป๊อปอัป
+
+    fetch(`/api/admin/users/${id}/orders`)
+        .then(res => res.json())
+        .then(orders => {
+            historyTable.innerHTML = '';
+            if (orders.length === 0) {
+                historyTable.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:15px;">No order history found.</td></tr>';
+                return;
+            }
+            orders.forEach(o => {
+                const orderDate = new Date(o.OrderDate).toLocaleString('th-TH');
+                historyTable.innerHTML += `
+                    <tr>
+                        <td style="padding:10px; border-bottom:1px solid #eee;">#${o.OrderID}</td>
+                        <td style="padding:10px; border-bottom:1px solid #eee;">${orderDate}</td>
+                        <td style="padding:10px; border-bottom:1px solid #eee; font-weight:bold;">${o.TotalAmount} ฿</td>
+                        <td style="padding:10px; border-bottom:1px solid #eee;">
+                            <span style="background:#e3f2fd; color:#0d47a1; padding:3px 8px; border-radius:10px; font-size:13px;">${o.Status}</span>
+                        </td>
+                    </tr>
+                `;
+            });
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            historyTable.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red;">Error loading data.</td></tr>';
+        });
+}
+
 function closeUpdateStatusModal() {
     document.getElementById('updateStatusModal').style.display = 'none';
 }
@@ -575,11 +880,11 @@ function submitUpdateStatus() {
     .then(res => res.json())
     .then(data => {
         if (data.success) {
-            alert('อัปเดตสถานะสำเร็จ!');
+            showCustomAlert('Update status successful!', true);
             closeUpdateStatusModal(); // ปิดป๊อปอัป
             loadAdminOrders();        // รีเฟรชตารางคำสั่งซื้อใหม่
         } else {
-            alert('เกิดข้อผิดพลาด: ' + data.error);
+            showCustomAlert('Error: ' + data.error, false);
         }
     })
     .catch(error => console.error('Error:', error));
@@ -594,13 +899,13 @@ function loadProfile() {
 
     const userObj = JSON.parse(localStorage.getItem('user'));
     if (!userObj) {
-        alert('Please log in first');
+        showCustomAlert('Please log in first', false);
         window.location.href = '/';
         return;
     }
-
+    const userId = userObj.userId || userObj.id || userObj.UserID;
     // ดึงข้อมูลผู้ใช้จาก API
-    fetch(`/api/user/${userObj.userId}`)
+    fetch(`/api/user/${userId}`)
         .then(res => res.json())
         .then(data => {
             // ใส่แต้มลงในหน้าจอ
@@ -614,6 +919,74 @@ function loadProfile() {
             document.getElementById('profAddress').value = data.Address || '';
         })
         .catch(error => console.error('Error fetching profile:', error));
+        loadCustomerOrders(userId); // โหลดประวัติการสั่งซื้อของผู้ใช้
+}
+// ==========================================
+// ฟังก์ชันโหลดประวัติการสั่งซื้อ (หน้า Profile)
+// ==========================================
+function loadCustomerOrders(userId) {
+    const orderTable = document.getElementById('customerOrderTable');
+    if (!orderTable) return;
+
+    fetch(`/api/user/${userId}/orders`)
+        .then(res => res.json())
+        .then(orders => {
+            orderTable.innerHTML = '';
+            if (orders.length === 0) {
+                showCustomAlert('You have no order history.', false);
+                return;
+            }
+
+            orders.forEach(o => {
+                const orderDate = new Date(o.OrderDate).toLocaleString('th-TH');
+                
+                // กำหนดสีป้ายสถานะให้สวยงาม
+                let badgeStyle = "padding:5px 10px; border-radius:12px; font-size:13px; font-weight:bold;";
+                if (o.Status === 'Completed') badgeStyle += "background:#d4edda; color:#155724;";
+                else if (o.Status === 'Cancelled') badgeStyle += "background:#f8d7da; color:#721c24;";
+                else if (o.Status === 'Pending') badgeStyle += "background:#e2e3e5; color:#383d41;";
+                else badgeStyle += "background:#fff3cd; color:#856404;"; // Processing, Shipped
+
+
+                orderTable.innerHTML += `
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding:15px; color:#007bff; font-weight:bold;">#${o.OrderID}</td>
+                        <td style="padding:15px;">${orderDate}</td>
+                        <td style="padding:15px; font-weight:bold;">${o.TotalAmount} ฿</td>
+                        <td style="padding:15px;">
+                            <span style="${badgeStyle}">${o.Status}</span>
+                        </td>
+                        <td style="padding:15px; text-align:center;">
+                            <button onclick="viewOrderDetails(${o.OrderID})" style="background:#007bff; color:white; border:none; padding:5px 10px; border-radius:3px; cursor:pointer;">รายละเอียด</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        })
+        .catch(err => console.error('Error fetching orders:', err));
+}
+function viewOrderDetails(orderId) {
+    document.getElementById('detailOrderIdText').innerText = orderId;
+    const tbody = document.getElementById('orderDetailTable');
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">กำลังโหลด...</td></tr>';
+    document.getElementById('orderDetailModal').style.display = 'flex';
+
+    fetch(`/api/orders/${orderId}/details`)
+        .then(res => res.json())
+        .then(items => {
+            tbody.innerHTML = '';
+            items.forEach(item => {
+                const total = item.Quantity * item.UnitPrice;
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="padding:10px; border-bottom:1px solid #eee;">${item.ProductName}</td>
+                        <td style="padding:10px; border-bottom:1px solid #eee;">${item.UnitPrice} ฿</td>
+                        <td style="padding:10px; border-bottom:1px solid #eee;">${item.Quantity}</td>
+                        <td style="padding:10px; border-bottom:1px solid #eee; font-weight:bold;">${total} ฿</td>
+                    </tr>
+                `;
+            });
+        });
 }
 
 // ฟังก์ชันบันทึกข้อมูล Profile
@@ -637,13 +1010,62 @@ function updateProfile(event) {
     .then(res => res.json())
     .then(data => {
         if (data.success) {
-            alert('Complete: ' + data.message);
+            showCustomAlert('Profile updated successfully!', true);
         } else {
-            alert('Error: ' + data.error);
+            showCustomAlert('Error: ' + data.error, false);
         }
     })
     .catch(error => console.error('Error updating profile:', error));
 }
+
+// ==========================================
+// ระบบ ป๊อปอัปแจ้งเตือน (Custom Alert)
+// ==========================================
+function showCustomAlert(message, isSuccess = true, callback = null) {
+    // แอบใส่ CSS Animation เล็กๆ ให้กล่องเด้งเนียนๆ
+    if (!document.getElementById('customAlertStyle')) {
+        const style = document.createElement('style');
+        style.id = 'customAlertStyle';
+        style.innerHTML = '@keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }';
+        document.head.appendChild(style);
+    }
+
+    // สร้างพื้นหลังสีดำโปร่งแสง
+    const overlay = document.createElement('div');
+    overlay.style = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; display:flex; justify-content:center; align-items:center;';
+    
+    // สร้างกล่องข้อความ
+    const box = document.createElement('div');
+    box.style = 'background:white; padding:30px; border-radius:10px; text-align:center; min-width:300px; box-shadow:0 4px 15px rgba(0,0,0,0.2); animation: popIn 0.2s ease-out;';
+    
+    // ไอคอน (ติ๊กถูก / กากบาท)
+    const icon = document.createElement('div');
+    icon.innerHTML = isSuccess ? 'Success' : 'Error';
+    icon.style = 'font-size:20px; margin-bottom:15px;';
+    
+    // ข้อความแจ้งเตือน
+    const text = document.createElement('h3');
+    text.innerText = message;
+    text.style = 'margin:0 0 20px 0; color:#333; font-weight:normal;';
+    
+    // ปุ่มตกลง
+    const btn = document.createElement('button');
+    btn.innerText = 'OK';
+    btn.style = `padding:10px 25px; border:none; border-radius:5px; color:white; cursor:pointer; font-size:16px; background:${isSuccess ? '#28a745' : '#dc3545'};`;
+    
+    // เมื่อกดปุ่ม ให้ลบกล่องออก และทำคำสั่งต่อไป (ถ้ามี)
+    btn.onclick = () => {
+        document.body.removeChild(overlay);
+        if (callback) callback();
+    };
+
+    box.appendChild(icon);
+    box.appendChild(text);
+    box.appendChild(btn);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+}
+
 
 // สั่งให้ทำงานเมื่อโหลดหน้าเว็บเสร็จ
 document.addEventListener('DOMContentLoaded', () => {
@@ -653,6 +1075,20 @@ document.addEventListener('DOMContentLoaded', () => {
     loadCartItems();   // โหลดรายการสินค้าในตะกร้า (สำหรับหน้า Cart)
     loadAdminProducts(); // โหลดรายการสินค้า (สำหรับหน้า Admin)
     loadAdminOrders();   // โหลดรายการคำสั่งซื้อ (สำหรับหน้า Admin)
-    loadProfile();     // โหลดข้อมูลโปรไฟล์ (สำหรับหน้า Profile)  
-    checkLoginStatus(); // ตรวจสอบสถานะการเข้าสู่ระบบ
+    loadAdminUsers();    // โหลดรายการสมาชิก (สำหรับหน้า Admin)
+
+// 1. จัดการปุ่ม Login/Logout (ทำงานทุกหน้า)
+    if (typeof checkLoginStatus === 'function') {
+        checkLoginStatus();
+    }
+
+    // 2. ดึงแต้มมาโชว์ในหน้า Cart (เช็คก่อนว่าอยู่หน้า Cart ไหม)
+    if (document.getElementById('cartUserPoints')) {
+        fetchUserPointsForCart();
+    }
+
+    // 3. โหลดหน้า Profile (เช็คก่อนว่าอยู่หน้า Profile ไหม)
+    if (document.getElementById('displayPoints')) {
+        loadProfile();
+    }
 });
